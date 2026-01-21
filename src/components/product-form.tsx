@@ -428,7 +428,7 @@ export function ProductForm({ mode, product }: ProductFormProps) {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-3 md:gap-6 md:p-6">
+    <div className="flex flex-1 flex-col gap-4 p-3 md:gap-6 md:p-6 max-w-300 mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
         <button

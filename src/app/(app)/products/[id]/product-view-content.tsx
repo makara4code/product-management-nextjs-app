@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowLeft,
+  ChevronRight,
   Pencil,
   Trash2,
   Package,
@@ -95,36 +95,38 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 max-w-6xl">
-        {/* Back Button and Actions */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button variant="ghost" asChild className="gap-2 w-fit">
-            <Link href="/products">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Back to Products</span>
-              <span className="sm:hidden">Back</span>
+      <div className="flex flex-1 flex-col gap-4 py-4 md:py-6 max-w-300 mx-auto">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm">
+          <Link href="/products" className="text-primary hover:underline">
+            Product
+          </Link>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <span className="text-muted-foreground truncate max-w-[200px]">
+            {product.title}
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="outline"
+            asChild
+            className="gap-2 flex-1 sm:flex-none"
+          >
+            <Link href={`/products/${product.id}/edit`}>
+              <Pencil className="h-4 w-4" />
+              Edit
             </Link>
           </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              asChild
-              className="gap-2 flex-1 sm:flex-none"
-            >
-              <Link href={`/products/${product.id}/edit`}>
-                <Pencil className="h-4 w-4" />
-                Edit
-              </Link>
-            </Button>
-            <Button
-              variant="destructive"
-              className="gap-2 flex-1 sm:flex-none"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </Button>
-          </div>
+          <Button
+            variant="destructive"
+            className="gap-2 flex-1 sm:flex-none"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">

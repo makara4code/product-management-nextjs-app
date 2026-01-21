@@ -16,7 +16,7 @@ export default async function Layout({ children }: PropsWithChildren) {
       <AppSidebar />
       <SidebarInset className="flex flex-col">
         <AppHeader />
-        {children}
+        <main className="container mx-auto">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );
