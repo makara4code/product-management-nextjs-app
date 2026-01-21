@@ -8,6 +8,10 @@ import { QueryProvider } from "@/components/query-provider";
 import { MSWProvider } from "@/components/msw-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
+// Vercel Plugins
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -45,6 +49,9 @@ export default function RootLayout({
             </QueryProvider>
           </MSWProvider>
           <Toaster position="top-center" />
+
+          <SpeedInsights />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
