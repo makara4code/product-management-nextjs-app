@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
+import { MSWProvider } from "@/components/msw-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const geistSans = Geist({
@@ -38,9 +39,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <QueryProvider>
-            <NuqsAdapter>{children}</NuqsAdapter>
-          </QueryProvider>
+          <MSWProvider>
+            <QueryProvider>
+              <NuqsAdapter>{children}</NuqsAdapter>
+            </QueryProvider>
+          </MSWProvider>
           <Toaster position="top-center" />
         </ThemeProvider>
       </body>
