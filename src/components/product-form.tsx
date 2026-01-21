@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, GitCompare } from "lucide-react";
+import { diffChars } from "diff";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,10 +37,49 @@ import {
   updateProductSchema,
   getFieldErrors,
 } from "@/lib/validations/product";
+import { parseAsBoolean, useQueryState } from "nuqs";
 
 interface ProductFormProps {
   mode: "create" | "edit";
   product?: Product;
+}
+
+// localStorage key prefix for form drafts
+const FORM_DRAFT_KEY_PREFIX = "product-form-draft";
+
+function getStorageKey(mode: "create" | "edit", productId?: number): string {
+  return `${FORM_DRAFT_KEY_PREFIX}-${mode === "edit" && productId ? productId : "new"}`;
+}
+
+function loadDraftFromStorage(storageKey: string): CreateProductData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      return JSON.parse(saved) as CreateProductData;
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
+}
+
+function saveDraftToStorage(storageKey: string, data: CreateProductData): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(data));
+  } catch {
+    // Ignore storage errors (e.g., quota exceeded)
+  }
+}
+
+function clearDraftFromStorage(storageKey: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(storageKey);
+  } catch {
+    // Ignore errors
+  }
 }
 
 export function ProductForm({ mode, product }: ProductFormProps) {
@@ -49,14 +89,40 @@ export function ProductForm({ mode, product }: ProductFormProps) {
   const createMutation = useCreateProductMutation();
   const updateMutation = useUpdateProductMutation();
 
-  const [formData, setFormData] = useState<CreateProductData>({
-    title: "",
-    description: "",
-    price: 0,
-    discountPercentage: 0,
-    stock: 0,
-    sku: "",
-    category: "",
+  // Storage key for this form instance
+  const storageKey = useMemo(
+    () => getStorageKey(mode, product?.id),
+    [mode, product?.id],
+  );
+
+  const [formData, setFormData] = useState<CreateProductData>(() => {
+    // First, try to load from localStorage (draft)
+    const draft = loadDraftFromStorage(getStorageKey(mode, product?.id));
+    if (draft) {
+      return draft;
+    }
+
+    // Otherwise, use product data or defaults
+    if (product) {
+      return {
+        title: product.title,
+        description: product.description,
+        price: product.price,
+        discountPercentage: product.discountPercentage || 0,
+        stock: product.stock,
+        sku: product.sku || "",
+        category: product.category,
+      };
+    }
+    return {
+      title: "",
+      description: "",
+      price: 0,
+      discountPercentage: 0,
+      stock: 0,
+      sku: "",
+      category: "",
+    };
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -70,54 +136,73 @@ export function ProductForm({ mode, product }: ProductFormProps) {
   const loading =
     isSubmitting || createMutation.isPending || updateMutation.isPending;
 
-  // Store original form data for comparison (only in edit mode)
-  const [originalFormData, setOriginalFormData] =
-    useState<CreateProductData | null>(null);
-
-  useEffect(() => {
-    if (product) {
-      const productData = {
-        title: product.title,
-        description: product.description,
-        price: product.price,
-        discountPercentage: product.discountPercentage || 0,
-        stock: product.stock,
-        sku: product.sku || "",
-        category: product.category,
-      };
-      setFormData(productData);
-      setOriginalFormData(productData);
-    }
+  // Compute original form data from product prop (stable reference for comparison)
+  const originalFormData = useMemo<CreateProductData | null>(() => {
+    if (!product) return null;
+    return {
+      title: product.title,
+      description: product.description,
+      price: product.price,
+      discountPercentage: product.discountPercentage || 0,
+      stock: product.stock,
+      sku: product.sku || "",
+      category: product.category,
+    };
   }, [product]);
+
+  // Track if form has been initialized from product data
+  const [isFormInitialized, setIsFormInitialized] = useState(!!product);
+
+  // Sync form data with product when it loads (only if no draft exists)
+  useEffect(() => {
+    if (originalFormData) {
+      const existingDraft = loadDraftFromStorage(storageKey);
+      if (!existingDraft) {
+        setFormData(originalFormData);
+      }
+      setIsFormInitialized(true);
+    }
+  }, [originalFormData, storageKey]);
+
+  // Save form data to localStorage when it changes (debounced)
+  useEffect(() => {
+    if (!isFormInitialized) return;
+
+    const timeoutId = setTimeout(() => {
+      saveDraftToStorage(storageKey, formData);
+    }, 500); // Debounce saves by 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [formData, storageKey, isFormInitialized]);
 
   // Check if form has unsaved changes (only meaningful in edit mode)
   const hasChanges = useMemo(() => {
     if (mode === "create") return true; // Always allow save in create mode
-    if (!originalFormData) return false;
+    if (!originalFormData || !isFormInitialized) return false;
 
-    return (
-      formData.title !== originalFormData.title ||
-      formData.description !== originalFormData.description ||
-      formData.price !== originalFormData.price ||
-      formData.discountPercentage !== originalFormData.discountPercentage ||
-      formData.stock !== originalFormData.stock ||
-      formData.sku !== originalFormData.sku ||
-      formData.category !== originalFormData.category
-    );
-  }, [mode, formData, originalFormData]);
+    return JSON.stringify(formData) !== JSON.stringify(originalFormData);
+  }, [mode, formData, originalFormData, isFormInitialized]);
 
-  // Handle browser/tab close with unsaved changes
-  useEffect(() => {
-    if (!hasChanges || mode === "create") return;
+  // Track which fields have changed (for highlighting)
+  const changedFields = useMemo(() => {
+    if (!originalFormData || mode === "create") return new Set<string>();
 
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
+    const changed = new Set<string>();
+    (Object.keys(formData) as Array<keyof CreateProductData>).forEach((key) => {
+      if (formData[key] !== originalFormData[key]) {
+        changed.add(key);
+      }
+    });
+    return changed;
+  }, [formData, originalFormData, mode]);
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [hasChanges, mode]);
+  // Toggle for showing changes comparison (persisted in URL)
+  const [showChangesComparison, setShowChangesComparison] = useQueryState(
+    "diff",
+    parseAsBoolean.withDefault(false),
+  );
+
+  // Note: No beforeunload handler needed - localStorage persists form data on refresh
 
   // Handle navigation with unsaved changes
   const handleNavigate = useCallback(
@@ -134,6 +219,7 @@ export function ProductForm({ mode, product }: ProductFormProps) {
 
   const confirmDiscard = () => {
     setShowDiscardDialog(false);
+    clearDraftFromStorage(storageKey);
     if (pendingNavigation) {
       router.push(pendingNavigation);
     }
@@ -214,6 +300,8 @@ export function ProductForm({ mode, product }: ProductFormProps) {
       } else if (product) {
         await updateMutation.mutateAsync({ id: product.id, data: formData });
       }
+      // Clear draft on successful save
+      clearDraftFromStorage(storageKey);
       // Keep isSubmitting true to prevent button click during redirect
       router.push("/products");
     } catch (err) {
@@ -224,6 +312,120 @@ export function ProductForm({ mode, product }: ProductFormProps) {
 
   const title = mode === "create" ? "Add Product" : "Edit Product";
   const submitLabel = mode === "create" ? "Add Product" : "Save Product";
+
+  // Helper to check if a field has changed
+  const isFieldChanged = (fieldName: keyof CreateProductData) =>
+    showChangesComparison && changedFields.has(fieldName);
+
+  // Helper to get original value for display
+  const getOriginalValue = (fieldName: keyof CreateProductData) =>
+    originalFormData?.[fieldName];
+
+  // Fields that should show full value comparison instead of character diff
+  const fullValueFields: Array<keyof CreateProductData> = [
+    "category",
+    "price",
+    "stock",
+    "discountPercentage",
+  ];
+
+  // Helper to get display value for a field (e.g., category name instead of slug)
+  const getDisplayValue = (
+    fieldName: keyof CreateProductData,
+    value: string | number | undefined,
+  ): string => {
+    if (value === undefined || value === "") return "";
+
+    if (fieldName === "category") {
+      const category = categories.find((c) => c.slug === value);
+      return category?.name ?? String(value);
+    }
+
+    if (fieldName === "price") {
+      return `$${value}`;
+    }
+
+    if (fieldName === "discountPercentage") {
+      return `${value}%`;
+    }
+
+    return String(value);
+  };
+
+  // Component to render change comparison
+  const ChangeComparison = ({
+    fieldName,
+  }: {
+    fieldName: keyof CreateProductData;
+  }) => {
+    if (!isFieldChanged(fieldName)) return null;
+
+    const currentValue = formData[fieldName];
+    const originalValue = getOriginalValue(fieldName);
+
+    // Use full value comparison for certain fields
+    if (fullValueFields.includes(fieldName)) {
+      const currentDisplay = getDisplayValue(fieldName, currentValue);
+      const originalDisplay = getDisplayValue(fieldName, originalValue);
+
+      return (
+        <div className="mt-1.5 flex items-center gap-2 text-xs">
+          <span className="rounded-sm bg-rose-100 px-1.5 py-0.5 text-rose-600 line-through dark:bg-rose-900/40 dark:text-rose-300">
+            {originalDisplay || "(empty)"}
+          </span>
+          <span className="text-muted-foreground">→</span>
+          <span className="rounded-sm bg-emerald-100 px-1.5 py-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+            {currentDisplay || "(empty)"}
+          </span>
+        </div>
+      );
+    }
+
+    // Character-level diff for text fields (title, description, sku)
+    const currentStr = String(currentValue ?? "");
+    const originalStr = String(originalValue ?? "");
+    const changes = diffChars(originalStr, currentStr);
+
+    const renderInlineDiff = () => {
+      return changes.map((part, index) => {
+        if (part.added) {
+          return (
+            <span
+              key={index}
+              className="rounded-sm bg-emerald-100 px-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+            >
+              {part.value}
+            </span>
+          );
+        }
+        if (part.removed) {
+          return (
+            <span
+              key={index}
+              className="rounded-sm bg-rose-100 px-0.5 text-rose-600 line-through decoration-rose-400 dark:bg-rose-900/40 dark:text-rose-300 dark:decoration-rose-500"
+            >
+              {part.value}
+            </span>
+          );
+        }
+        return (
+          <span key={index} className="text-foreground/70">
+            {part.value}
+          </span>
+        );
+      });
+    };
+
+    return (
+      <div className="mt-1.5 rounded-md border border-muted-foreground/20 bg-muted/50 px-2.5 py-2 font-mono text-xs leading-relaxed">
+        {currentStr === "" && originalStr === "" ? (
+          <span className="italic text-muted-foreground">(empty)</span>
+        ) : (
+          renderInlineDiff()
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-3 md:gap-6 md:p-6">
@@ -242,6 +444,22 @@ export function ProductForm({ mode, product }: ProductFormProps) {
 
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-2 md:gap-3">
+        {/* Compare Changes Toggle - only show in edit mode when there are changes */}
+        {mode === "edit" && hasChanges && (
+          <Button
+            variant={showChangesComparison ? "secondary" : "outline"}
+            size="sm"
+            className="md:size-default"
+            onClick={() => setShowChangesComparison(!showChangesComparison)}
+            title="Toggle changes comparison"
+          >
+            <GitCompare className="mr-1 h-4 w-4 md:mr-2" />
+            <span className="hidden sm:inline">
+              {showChangesComparison ? "Hide Changes" : "Show Changes"}
+            </span>
+            <span className="sm:hidden">Diff</span>
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -290,6 +508,7 @@ export function ProductForm({ mode, product }: ProductFormProps) {
                   onChange={handleChange}
                   className={fieldErrors.title ? "border-destructive" : ""}
                 />
+                <ChangeComparison fieldName="title" />
                 {fieldErrors.title && (
                   <p className="text-sm text-destructive">
                     {fieldErrors.title}
@@ -309,6 +528,7 @@ export function ProductForm({ mode, product }: ProductFormProps) {
                     fieldErrors.description ? "border-destructive" : ""
                   }
                 />
+                <ChangeComparison fieldName="description" />
                 {fieldErrors.description && (
                   <p className="text-sm text-destructive">
                     {fieldErrors.description}
@@ -342,6 +562,7 @@ export function ProductForm({ mode, product }: ProductFormProps) {
                     className={`pl-7 ${fieldErrors.price ? "border-destructive" : ""}`}
                   />
                 </div>
+                <ChangeComparison fieldName="price" />
                 {fieldErrors.price && (
                   <p className="text-sm text-destructive">
                     {fieldErrors.price}
@@ -371,6 +592,7 @@ export function ProductForm({ mode, product }: ProductFormProps) {
                     %
                   </span>
                 </div>
+                <ChangeComparison fieldName="discountPercentage" />
                 {fieldErrors.discountPercentage && (
                   <p className="text-sm text-destructive">
                     {fieldErrors.discountPercentage}
@@ -397,6 +619,7 @@ export function ProductForm({ mode, product }: ProductFormProps) {
                     onChange={handleChange}
                     className={fieldErrors.sku ? "border-destructive" : ""}
                   />
+                  <ChangeComparison fieldName="sku" />
                   {fieldErrors.sku && (
                     <p className="text-sm text-destructive">
                       {fieldErrors.sku}
@@ -415,6 +638,7 @@ export function ProductForm({ mode, product }: ProductFormProps) {
                     onChange={handleChange}
                     className={fieldErrors.stock ? "border-destructive" : ""}
                   />
+                  <ChangeComparison fieldName="stock" />
                   {fieldErrors.stock && (
                     <p className="text-sm text-destructive">
                       {fieldErrors.stock}
@@ -454,6 +678,7 @@ export function ProductForm({ mode, product }: ProductFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                <ChangeComparison fieldName="category" />
                 {fieldErrors.category && (
                   <p className="text-sm text-destructive">
                     {fieldErrors.category}

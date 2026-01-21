@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useQueryState, parseAsInteger, parseAsStringLiteral } from "nuqs";
+import { useState, useMemo } from "react";
 import { X } from "lucide-react";
-import { useDebounce } from "@/hooks/use-debounce";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { usePaginatedQuery } from "@/hooks/use-paginated-query";
 import {
   ProductsSearch,
   ProductsActions,
@@ -25,7 +25,7 @@ import {
   useAdvancedFilters,
   useViewMode,
 } from "./_hooks";
-import type { ProductFilter, SortField, SortOrder } from "./_types";
+import type { ProductFilter, SortField } from "./_types";
 
 const FILTER_OPTIONS = ["all", "published", "low-stock", "draft"] as const;
 const SORT_FIELD_OPTIONS = [
@@ -36,39 +36,39 @@ const SORT_FIELD_OPTIONS = [
   "price",
   "createdAt",
 ] as const;
-const SORT_ORDER_OPTIONS = ["asc", "desc"] as const;
 
 export function ProductsContent() {
   // ===========================================
-  // URL State (Single Source of Truth)
+  // Pagination & URL State (via reusable hook)
   // ===========================================
-  const [filter, setFilter] = useQueryState(
-    "filter",
-    parseAsStringLiteral(FILTER_OPTIONS).withDefault("all"),
-  );
-
-  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
-  const [search, setSearch] = useQueryState("search", { defaultValue: "" });
-  const [sortBy, setSortBy] = useQueryState(
-    "sortBy",
-    parseAsStringLiteral(SORT_FIELD_OPTIONS),
-  );
-
-  const [order, setOrder] = useQueryState(
-    "order",
-    parseAsStringLiteral(SORT_ORDER_OPTIONS).withDefault("asc"),
-  );
-
-  const [limit, setLimit] = useQueryState(
-    "limit",
-    parseAsInteger.withDefault(10),
-  );
+  const {
+    filter,
+    page,
+    search,
+    sortBy,
+    order,
+    limit,
+    searchInput,
+    setSearchInput,
+    setPage,
+    skip,
+    handlePageChange,
+    handleLimitChange,
+    handleSortChange,
+    handleFilterChange,
+  } = usePaginatedQuery<{ sortField: SortField; filter: ProductFilter }>({
+    filterOptions: FILTER_OPTIONS,
+    defaultFilter: "all",
+    sortFieldOptions: SORT_FIELD_OPTIONS,
+    defaultSortField: null,
+    defaultOrder: "asc",
+    defaultLimit: 10,
+    searchDebounceMs: 300,
+  });
 
   // ===========================================
   // Local UI State
   // ===========================================
-  const [searchInput, setSearchInput] = useState(search);
-  const debouncedSearch = useDebounce(searchInput, 300);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<number | null>(null);
 
@@ -92,10 +92,10 @@ export function ProductsContent() {
   // TanStack Query - reads directly from URL state
   const { data, isFetching: loading } = useProductsQuery({
     limit,
-    skip: (page - 1) * limit,
+    skip,
     search: search || undefined,
-    sortBy: sortBy as SortField | null,
-    order: order as SortOrder,
+    sortBy,
+    order,
     category: serverCategory,
   });
 
@@ -109,7 +109,7 @@ export function ProductsContent() {
     hasActiveCategoryOrPriceFilters,
   } = useProductFilters({
     products: data?.products ?? [],
-    filter: filter as ProductFilter,
+    filter,
     advancedFilters,
   });
 
@@ -133,49 +133,14 @@ export function ProductsContent() {
     ? 1
     : Math.ceil(serverTotal / limit) || 1;
 
-  // ===========================================
-  // Effects
-  // ===========================================
-
-  // Sync debounced search to URL
-  useEffect(() => {
-    if (debouncedSearch !== search) {
-      setSearch(debouncedSearch || null);
-      setPage(1);
-    }
-  }, [debouncedSearch, search, setSearch, setPage]);
-
   // Reset to page 1 when client-side filters are applied
-  useEffect(() => {
-    if (hasClientSideFilters && page > 1) {
-      setPage(1);
-    }
-  }, [hasClientSideFilters, page, setPage]);
+  if (hasClientSideFilters && page > 1) {
+    setPage(1);
+  }
 
   // ===========================================
   // Event Handlers
   // ===========================================
-  const handleTabChange = (value: ProductFilter) => {
-    setFilter(value);
-    setPage(1);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleLimitChange = (newLimit: number) => {
-    setLimit(newLimit);
-    setPage(1);
-  };
-
-  const handleSortChange = (field: SortField) => {
-    const newOrder = sortBy === field && order === "asc" ? "desc" : "asc";
-    setSortBy(field);
-    setOrder(newOrder);
-    setPage(1);
-  };
-
   const confirmDelete = (id: number) => {
     setProductToDelete(id);
     setDeleteDialogOpen(true);
@@ -206,10 +171,7 @@ export function ProductsContent() {
           {/* Tabs and Filters */}
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3">
-              <ProductsTabs
-                value={filter as ProductFilter}
-                onChange={handleTabChange}
-              />
+              <ProductsTabs value={filter} onChange={handleFilterChange} />
               {selectedProducts.length > 0 && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-md">
                   <span className="text-sm font-medium">
@@ -250,13 +212,10 @@ export function ProductsContent() {
         <div className="flex flex-1 flex-col px-3 pb-3 md:px-4 md:pb-4 min-h-0 overflow-hidden">
           {/* Table View */}
           <div
-            className={
-              !isHydrated
-                ? "hidden"
-                : effectiveViewMode === "table"
-                  ? "flex-1 min-h-0 flex flex-col"
-                  : "hidden"
-            }
+            className={cn(
+              "flex-1 min-h-0 flex flex-col",
+              (!isHydrated || effectiveViewMode !== "table") && "hidden",
+            )}
           >
             <ProductsTable
               products={filteredProducts}
@@ -265,8 +224,8 @@ export function ProductsContent() {
               toggleProductSelection={toggleProductSelection}
               toggleAllProducts={toggleAllProducts}
               confirmDelete={confirmDelete}
-              sortField={sortBy as SortField | null}
-              sortOrder={order as SortOrder}
+              sortField={sortBy}
+              sortOrder={order}
               onSort={handleSortChange}
               page={page}
               limit={limit}
@@ -279,13 +238,10 @@ export function ProductsContent() {
 
           {/* Card View */}
           <div
-            className={
-              !isHydrated
-                ? "hidden"
-                : effectiveViewMode === "card"
-                  ? "flex-1 min-h-0 flex flex-col"
-                  : "hidden"
-            }
+            className={cn(
+              "flex-1 min-h-0 flex flex-col",
+              (!isHydrated || effectiveViewMode !== "card") && "hidden",
+            )}
           >
             <VirtualizedCardGrid
               products={filteredProducts}
