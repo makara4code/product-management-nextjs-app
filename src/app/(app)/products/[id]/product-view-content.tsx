@@ -95,7 +95,7 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 max-w-6xl">
+      <div className="flex flex-1 flex-col gap-4 py-4 md:py-6 max-w-300 mx-auto">
         {/* Back Button and Actions */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button variant="ghost" asChild className="gap-2 w-fit">
