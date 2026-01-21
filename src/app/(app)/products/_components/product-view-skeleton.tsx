@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function ProductViewSkeleton() {
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:py-6 max-w-300 mx-auto">
+    <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 max-w-300 mx-auto">
       {/* Breadcrumb skeleton */}
       <div className="flex items-center gap-2">
         <Skeleton className="h-4 w-16" />
