@@ -3,13 +3,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function ProductViewSkeleton() {
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:py-6 max-w-300 mx-auto">
-      {/* Back button skeleton */}
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-9 w-32" />
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-20" />
-          <Skeleton className="h-9 w-20" />
-        </div>
+      {/* Breadcrumb skeleton */}
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-4" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+
+      {/* Actions skeleton */}
+      <div className="flex items-center justify-end gap-2">
+        <Skeleton className="h-9 w-20" />
+        <Skeleton className="h-9 w-20" />
       </div>
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="space-y-3">
