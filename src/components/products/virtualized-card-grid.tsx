@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Pencil, Trash2, Package } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ProductImage } from "@/components/products/product-image";
 import type { Product } from "@/lib/api/products";
 
 const limitOptions = [5, 10, 20, 50, 100] as const;
@@ -63,22 +64,12 @@ function ProductCard({
   return (
     <Card className="overflow-hidden group pt-0 flex flex-col">
       <div className="relative">
-        <div className="aspect-4/3 overflow-hidden bg-muted flex items-center justify-center">
-          {product.thumbnail ? (
-            <img
-              src={product.thumbnail}
-              alt={product.title}
-              className="max-h-full max-w-full object-contain transition-transform group-hover:scale-105"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-                e.currentTarget.nextElementSibling?.classList.remove("hidden");
-              }}
-            />
-          ) : null}
-          <Package
-            className={`h-12 w-12 text-muted-foreground ${product.thumbnail ? "hidden" : ""}`}
-          />
-        </div>
+        <ProductImage
+          src={product.thumbnail}
+          alt={product.title}
+          size="lg"
+          className="rounded-none"
+        />
         <div className="absolute top-2 left-2">
           <Checkbox
             checked={isSelected}
