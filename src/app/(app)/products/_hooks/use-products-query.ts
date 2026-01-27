@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   useQuery,
   useMutation,
   useQueryClient,
   keepPreviousData,
+  type QueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { productsService } from "@/services/products.service";
@@ -151,4 +153,85 @@ export function useUpdateProductMutation() {
       });
     },
   });
+}
+
+// Prefetch functions for route preloading
+export function prefetchProducts(
+  queryClient: QueryClient,
+  params: ProductsQueryParams = { limit: 10, skip: 0 },
+) {
+  return queryClient.prefetchQuery({
+    queryKey: productKeys.list(params),
+    queryFn: async ({ signal }) => {
+      const { limit, skip, sortBy, order, category, search } = params;
+      if (search) {
+        return productsService.searchProducts({
+          query: search,
+          limit,
+          skip,
+          sortBy,
+          order,
+          category,
+          signal,
+        });
+      }
+      return productsService.getProducts({
+        limit,
+        skip,
+        sortBy,
+        order,
+        category,
+        signal,
+      });
+    },
+  });
+}
+
+export function prefetchCategories(queryClient: QueryClient) {
+  return queryClient.prefetchQuery({
+    queryKey: categoryKeys.all,
+    queryFn: ({ signal }) => productsService.getCategories(signal),
+  });
+}
+
+// Hook for prefetching products page data
+export function usePrefetchProducts() {
+  const queryClient = useQueryClient();
+
+  return () => {
+    prefetchProducts(queryClient);
+    prefetchCategories(queryClient);
+  };
+}
+
+// Hook for prefetching next/previous pages for pagination
+export function usePrefetchNextPage(
+  currentParams: ProductsQueryParams,
+  totalPages: number,
+) {
+  const queryClient = useQueryClient();
+  const { limit, skip, search, sortBy, order, category } = currentParams;
+  const currentPage = Math.floor(skip / limit) + 1;
+
+  // Prefetch next page if not on last page
+  useEffect(() => {
+    if (currentPage < totalPages) {
+      const nextPageParams: ProductsQueryParams = {
+        ...currentParams,
+        skip: skip + limit,
+      };
+      prefetchProducts(queryClient, nextPageParams);
+    }
+  }, [
+    queryClient,
+    currentPage,
+    totalPages,
+    limit,
+    skip,
+    search,
+    sortBy,
+    order,
+    category,
+    currentParams,
+  ]);
 }

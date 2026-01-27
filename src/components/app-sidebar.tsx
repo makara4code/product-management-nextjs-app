@@ -1,9 +1,10 @@
 "use client";
 
-import type * as React from "react";
+import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   Package,
@@ -23,8 +24,15 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { usePrefetchProducts } from "@/app/(app)/products/_hooks/use-products-query";
 
-const navItems = [
+type NavItem = {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+};
+
+const navItems: NavItem[] = [
   {
     title: "Dashboard",
     url: "/dashboard",
@@ -52,16 +60,75 @@ const navItems = [
   },
 ];
 
+type NavItemComponentProps = {
+  item: NavItem;
+  isActive: boolean;
+  onNavClick: () => void;
+  onPrefetch?: () => void;
+};
+
+const NavItemComponent = React.memo(function NavItemComponent({
+  item,
+  isActive,
+  onNavClick,
+  onPrefetch,
+}: NavItemComponentProps) {
+  return (
+    <SidebarMenuItem className="relative">
+      {isActive && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full" />
+      )}
+      <SidebarMenuButton
+        asChild
+        isActive={isActive}
+        tooltip={item.title}
+        className={cn(
+          "h-12 gap-3 rounded-none px-5 text-sidebar-foreground/70 hover:bg-transparent hover:text-sidebar-foreground",
+          "data-[active=true]:bg-transparent data-[active=true]:text-sidebar-foreground data-[active=true]:font-medium",
+          "group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center",
+        )}
+      >
+        <Link
+          href={item.url}
+          onClick={onNavClick}
+          onMouseEnter={onPrefetch}
+          onFocus={onPrefetch}
+          className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full"
+        >
+          <item.icon className="h-5 w-5 shrink-0" />
+          <span className="group-data-[collapsible=icon]:hidden">
+            {item.title}
+          </span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+});
+
+// Map of routes to their prefetch functions
+const usePrefetchMap = () => {
+  const prefetchProducts = usePrefetchProducts();
+
+  return React.useMemo(
+    () => ({
+      "/products": prefetchProducts,
+      // Add more routes here as they get data fetching
+    }),
+    [prefetchProducts],
+  );
+};
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { setOpenMobile, isMobile } = useSidebar();
+  const prefetchMap = usePrefetchMap();
 
-  // Close mobile sidebar on navigation
-  const handleNavClick = () => {
+  // Close mobile sidebar on navigation - memoized to prevent unnecessary re-renders
+  const handleNavClick = React.useCallback(() => {
     if (isMobile) {
       setOpenMobile(false);
     }
-  };
+  }, [isMobile, setOpenMobile]);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -88,33 +155,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {navItems.map((item) => {
             const isActive =
               pathname === item.url || pathname.startsWith(`${item.url}/`);
+            const onPrefetch =
+              prefetchMap[item.url as keyof typeof prefetchMap];
             return (
-              <SidebarMenuItem key={item.title} className="relative">
-                {isActive && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full" />
-                )}
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  tooltip={item.title}
-                  className={cn(
-                    "h-[48px] gap-3 rounded-none px-5 text-sidebar-foreground/70 hover:bg-transparent hover:text-sidebar-foreground",
-                    "data-[active=true]:bg-transparent data-[active=true]:text-sidebar-foreground data-[active=true]:font-medium",
-                    "group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center",
-                  )}
-                >
-                  <Link
-                    href={item.url}
-                    onClick={handleNavClick}
-                    className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full"
-                  >
-                    <item.icon className="h-5 w-5 shrink-0" />
-                    <span className="group-data-[collapsible=icon]:hidden">
-                      {item.title}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <NavItemComponent
+                key={item.title}
+                item={item}
+                isActive={isActive}
+                onNavClick={handleNavClick}
+                onPrefetch={onPrefetch}
+              />
             );
           })}
         </SidebarMenu>

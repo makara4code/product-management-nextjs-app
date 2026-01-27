@@ -5,6 +5,7 @@ export {
   useDeleteProductMutation,
   useCreateProductMutation,
   useUpdateProductMutation,
+  usePrefetchNextPage,
 } from "./use-products-query";
 
 export { useProductSelection } from "./use-product-selection";

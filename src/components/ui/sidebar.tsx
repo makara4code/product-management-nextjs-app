@@ -80,6 +80,14 @@ function SidebarProvider({
   // Track if user has manually toggled sidebar (to respect their preference)
   const [userToggled, setUserToggled] = React.useState(false);
 
+  // Cache cookie value to avoid repeated parsing
+  const getCookieValue = React.useCallback(() => {
+    const cookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`));
+    return cookie ? cookie.split("=")[1] !== "false" : null;
+  }, []);
+
   // Mark as hydrated after mount
   React.useEffect(() => {
     setIsHydrated(true);
@@ -90,22 +98,14 @@ function SidebarProvider({
     if (isTablet && !userToggled) {
       _setOpen(false);
     } else if (!isTablet && !isMobile && !userToggled) {
-      // Read from cookie when restoring
-      const cookie = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`));
-      if (cookie) {
-        _setOpen(cookie.split("=")[1] !== "false");
+      const cookieValue = getCookieValue();
+      if (cookieValue !== null) {
+        _setOpen(cookieValue);
       } else {
         _setOpen(defaultOpen);
       }
     }
-  }, [isTablet, isMobile, userToggled, defaultOpen]);
-
-  // Reset userToggled when screen size changes significantly
-  React.useEffect(() => {
-    setUserToggled(false);
-  }, []);
+  }, [isTablet, isMobile, userToggled, defaultOpen, getCookieValue]);
 
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
