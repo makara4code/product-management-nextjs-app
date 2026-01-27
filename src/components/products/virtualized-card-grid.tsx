@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Pencil, Trash2, Package } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,9 +15,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ProductImage } from "@/components/products/product-image";
 import type { Product } from "@/lib/api/products";
 
 const limitOptions = [5, 10, 20, 50, 100] as const;
+
+type PrefetchHandlers = {
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onFocus: () => void;
+  onBlur: () => void;
+};
 
 interface VirtualizedCardGridProps {
   products: Product[];
@@ -25,6 +33,7 @@ interface VirtualizedCardGridProps {
   selectedProducts: number[];
   toggleProductSelection: (id: number) => void;
   confirmDelete: (id: number) => void;
+  createPrefetchHandlers?: (id: number) => PrefetchHandlers;
   page: number;
   limit: number;
   total: number;
@@ -54,31 +63,23 @@ function ProductCard({
   isSelected,
   onToggleSelection,
   onDelete,
+  prefetchHandlers,
 }: {
   product: Product;
   isSelected: boolean;
   onToggleSelection: () => void;
   onDelete: () => void;
+  prefetchHandlers?: PrefetchHandlers;
 }) {
   return (
     <Card className="overflow-hidden group pt-0 flex flex-col">
       <div className="relative">
-        <div className="aspect-4/3 overflow-hidden bg-muted flex items-center justify-center">
-          {product.thumbnail ? (
-            <img
-              src={product.thumbnail}
-              alt={product.title}
-              className="max-h-full max-w-full object-contain transition-transform group-hover:scale-105"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-                e.currentTarget.nextElementSibling?.classList.remove("hidden");
-              }}
-            />
-          ) : null}
-          <Package
-            className={`h-12 w-12 text-muted-foreground ${product.thumbnail ? "hidden" : ""}`}
-          />
-        </div>
+        <ProductImage
+          src={product.thumbnail}
+          alt={product.title}
+          size="lg"
+          className="rounded-none"
+        />
         <div className="absolute top-2 left-2">
           <Checkbox
             checked={isSelected}
@@ -110,6 +111,7 @@ function ProductCard({
             <Link
               href={`/products/${product.id}`}
               className="font-medium line-clamp-1 hover:underline text-sm sm:text-base"
+              {...prefetchHandlers}
             >
               {product.title}
             </Link>
@@ -154,6 +156,7 @@ export function VirtualizedCardGrid({
   selectedProducts,
   toggleProductSelection,
   confirmDelete,
+  createPrefetchHandlers,
   page,
   limit,
   total,
@@ -210,6 +213,7 @@ export function VirtualizedCardGrid({
                 isSelected={selectedProducts.includes(product.id)}
                 onToggleSelection={() => toggleProductSelection(product.id)}
                 onDelete={() => confirmDelete(product.id)}
+                prefetchHandlers={createPrefetchHandlers?.(product.id)}
               />
             ))}
           </div>

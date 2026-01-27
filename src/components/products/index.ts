@@ -2,6 +2,9 @@
 export { ProductsTable } from "./products-table";
 export { VirtualizedCardGrid } from "./virtualized-card-grid";
 
+// Shared components
+export { ProductImage } from "./product-image";
+
 // Header components
 export { ProductsSearch } from "./products-search";
 export { ProductsActions } from "./products-actions";

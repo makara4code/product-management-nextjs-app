@@ -24,6 +24,8 @@ import {
   useProductFilters,
   useAdvancedFilters,
   useViewMode,
+  usePrefetchNextPage,
+  usePrefetchProduct,
 } from "./_hooks";
 import type { ProductFilter, SortField } from "./_types";
 
@@ -89,15 +91,18 @@ export function ProductsContent() {
       ? advancedFilters.categories[0]
       : undefined;
 
-  // TanStack Query - reads directly from URL state
-  const { data, isFetching: loading } = useProductsQuery({
+  // Query params for products
+  const queryParams = {
     limit,
     skip,
     search: search || undefined,
     sortBy,
     order,
     category: serverCategory,
-  });
+  };
+
+  // TanStack Query - reads directly from URL state
+  const { data, isFetching: loading } = useProductsQuery(queryParams);
 
   const { data: apiCategories = [] } = useCategoriesQuery();
   const deleteMutation = useDeleteProductMutation();
@@ -132,6 +137,12 @@ export function ProductsContent() {
   const totalPages = hasClientSideFilters
     ? 1
     : Math.ceil(serverTotal / limit) || 1;
+
+  // Prefetch next page for faster pagination navigation
+  usePrefetchNextPage(queryParams, totalPages);
+
+  // Prefetch product detail on hover (with 150ms threshold)
+  const createPrefetchHandlers = usePrefetchProduct();
 
   // Reset to page 1 when client-side filters are applied
   if (hasClientSideFilters && page > 1) {
@@ -224,6 +235,7 @@ export function ProductsContent() {
               toggleProductSelection={toggleProductSelection}
               toggleAllProducts={toggleAllProducts}
               confirmDelete={confirmDelete}
+              createPrefetchHandlers={createPrefetchHandlers}
               sortField={sortBy}
               sortOrder={order}
               onSort={handleSortChange}
@@ -249,6 +261,7 @@ export function ProductsContent() {
               selectedProducts={selectedProducts}
               toggleProductSelection={toggleProductSelection}
               confirmDelete={confirmDelete}
+              createPrefetchHandlers={createPrefetchHandlers}
               page={page}
               limit={limit}
               total={total}

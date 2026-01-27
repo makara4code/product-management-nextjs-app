@@ -139,7 +139,7 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
                   alt={product.title}
                   fill
                   className="object-contain p-4"
-                  unoptimized
+                  sizes="320px"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-muted-foreground">
@@ -165,7 +165,7 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
                       alt={product.title}
                       fill
                       className="object-contain p-1"
-                      unoptimized
+                      sizes="56px"
                     />
                   </button>
                 ))}

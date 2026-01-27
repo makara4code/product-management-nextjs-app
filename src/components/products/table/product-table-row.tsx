@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { Pencil, Trash2, Package } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { ProductImage } from "@/components/products/product-image";
 import type { Product } from "@/types/product";
 import { formatDate, formatPrice } from "@/app/(app)/products/_lib";
+
+type PrefetchHandlers = {
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onFocus: () => void;
+  onBlur: () => void;
+};
 
 interface ProductTableRowProps {
   product: Product;
@@ -14,6 +22,7 @@ interface ProductTableRowProps {
   isLargeScreen: boolean;
   onToggleSelection: (id: number) => void;
   onDelete: (id: number) => void;
+  prefetchHandlers?: PrefetchHandlers;
 }
 
 export function ProductTableRow({
@@ -22,6 +31,7 @@ export function ProductTableRow({
   isLargeScreen,
   onToggleSelection,
   onDelete,
+  prefetchHandlers,
 }: ProductTableRowProps) {
   return (
     <TableRow className={isSelected ? "bg-[#F9F9FC] dark:bg-muted/50" : ""}>
@@ -33,28 +43,12 @@ export function ProductTableRow({
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="h-10 w-10 md:h-12 md:w-12 overflow-hidden rounded-lg bg-muted shrink-0 flex items-center justify-center">
-            {product.thumbnail ? (
-              <img
-                src={product.thumbnail}
-                alt={product.title}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                  e.currentTarget.nextElementSibling?.classList.remove(
-                    "hidden",
-                  );
-                }}
-              />
-            ) : null}
-            <Package
-              className={`h-5 w-5 text-muted-foreground ${product.thumbnail ? "hidden" : ""}`}
-            />
-          </div>
+          <ProductImage src={product.thumbnail} alt={product.title} size="sm" />
           <div className="min-w-0">
             <Link
               href={`/products/${product.id}`}
               className="font-medium hover:underline block truncate text-sm md:text-base"
+              {...prefetchHandlers}
             >
               {product.title}
             </Link>
@@ -69,6 +63,7 @@ export function ProductTableRow({
           <Link
             href={`/products/${product.id}`}
             className="text-primary hover:underline"
+            {...prefetchHandlers}
           >
             {product.sku || product.id}
           </Link>

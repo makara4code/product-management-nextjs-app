@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect, useRef, useCallback } from "react";
 import {
   useQuery,
   useMutation,
   useQueryClient,
   keepPreviousData,
+  type QueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { productsService } from "@/services/products.service";
@@ -71,6 +73,8 @@ export function useProductQuery(id: number) {
     queryKey: productKeys.detail(id),
     queryFn: ({ signal }) => productsService.getProduct(id, signal),
     enabled: id > 0,
+    // Keep prefetched data fresh for 30 seconds to avoid refetch on navigation
+    staleTime: 30 * 1000,
   });
 }
 
@@ -151,4 +155,136 @@ export function useUpdateProductMutation() {
       });
     },
   });
+}
+
+// Prefetch functions for route preloading
+export function prefetchProduct(queryClient: QueryClient, id: number) {
+  return queryClient.prefetchQuery({
+    queryKey: productKeys.detail(id),
+    queryFn: ({ signal }) => productsService.getProduct(id, signal),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function prefetchProducts(
+  queryClient: QueryClient,
+  params: ProductsQueryParams = { limit: 10, skip: 0 },
+) {
+  return queryClient.prefetchQuery({
+    queryKey: productKeys.list(params),
+    queryFn: async ({ signal }) => {
+      const { limit, skip, sortBy, order, category, search } = params;
+      if (search) {
+        return productsService.searchProducts({
+          query: search,
+          limit,
+          skip,
+          sortBy,
+          order,
+          category,
+          signal,
+        });
+      }
+      return productsService.getProducts({
+        limit,
+        skip,
+        sortBy,
+        order,
+        category,
+        signal,
+      });
+    },
+  });
+}
+
+export function prefetchCategories(queryClient: QueryClient) {
+  return queryClient.prefetchQuery({
+    queryKey: categoryKeys.all,
+    queryFn: ({ signal }) => productsService.getCategories(signal),
+  });
+}
+
+// Hook for prefetching products page data
+export function usePrefetchProducts() {
+  const queryClient = useQueryClient();
+
+  return () => {
+    prefetchProducts(queryClient);
+    prefetchCategories(queryClient);
+  };
+}
+
+// Hover threshold before prefetching (ms) - prevents accidental triggers
+const PREFETCH_HOVER_THRESHOLD = 150;
+
+// Hook for prefetching a single product detail with hover threshold
+export function usePrefetchProduct() {
+  const queryClient = useQueryClient();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPrefetchTimeout = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  const createPrefetchHandlers = useCallback(
+    (id: number) => ({
+      onMouseEnter: () => {
+        clearPrefetchTimeout();
+        timeoutRef.current = setTimeout(() => {
+          prefetchProduct(queryClient, id);
+        }, PREFETCH_HOVER_THRESHOLD);
+      },
+      onMouseLeave: clearPrefetchTimeout,
+      onFocus: () => {
+        clearPrefetchTimeout();
+        timeoutRef.current = setTimeout(() => {
+          prefetchProduct(queryClient, id);
+        }, PREFETCH_HOVER_THRESHOLD);
+      },
+      onBlur: clearPrefetchTimeout,
+    }),
+    [queryClient, clearPrefetchTimeout],
+  );
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return clearPrefetchTimeout;
+  }, [clearPrefetchTimeout]);
+
+  return createPrefetchHandlers;
+}
+
+// Hook for prefetching next/previous pages for pagination
+export function usePrefetchNextPage(
+  currentParams: ProductsQueryParams,
+  totalPages: number,
+) {
+  const queryClient = useQueryClient();
+  const { limit, skip, search, sortBy, order, category } = currentParams;
+  const currentPage = Math.floor(skip / limit) + 1;
+
+  // Prefetch next page if not on last page
+  useEffect(() => {
+    if (currentPage < totalPages) {
+      const nextPageParams: ProductsQueryParams = {
+        ...currentParams,
+        skip: skip + limit,
+      };
+      prefetchProducts(queryClient, nextPageParams);
+    }
+  }, [
+    queryClient,
+    currentPage,
+    totalPages,
+    limit,
+    skip,
+    search,
+    sortBy,
+    order,
+    category,
+    currentParams,
+  ]);
 }
