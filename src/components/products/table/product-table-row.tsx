@@ -9,12 +9,20 @@ import { ProductImage } from "@/components/products/product-image";
 import type { Product } from "@/types/product";
 import { formatDate, formatPrice } from "@/app/(app)/products/_lib";
 
+type PrefetchHandlers = {
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onFocus: () => void;
+  onBlur: () => void;
+};
+
 interface ProductTableRowProps {
   product: Product;
   isSelected: boolean;
   isLargeScreen: boolean;
   onToggleSelection: (id: number) => void;
   onDelete: (id: number) => void;
+  prefetchHandlers?: PrefetchHandlers;
 }
 
 export function ProductTableRow({
@@ -23,6 +31,7 @@ export function ProductTableRow({
   isLargeScreen,
   onToggleSelection,
   onDelete,
+  prefetchHandlers,
 }: ProductTableRowProps) {
   return (
     <TableRow className={isSelected ? "bg-[#F9F9FC] dark:bg-muted/50" : ""}>
@@ -39,6 +48,7 @@ export function ProductTableRow({
             <Link
               href={`/products/${product.id}`}
               className="font-medium hover:underline block truncate text-sm md:text-base"
+              {...prefetchHandlers}
             >
               {product.title}
             </Link>
@@ -53,6 +63,7 @@ export function ProductTableRow({
           <Link
             href={`/products/${product.id}`}
             className="text-primary hover:underline"
+            {...prefetchHandlers}
           >
             {product.sku || product.id}
           </Link>

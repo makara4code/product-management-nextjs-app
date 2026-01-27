@@ -25,6 +25,7 @@ import {
   useAdvancedFilters,
   useViewMode,
   usePrefetchNextPage,
+  usePrefetchProduct,
 } from "./_hooks";
 import type { ProductFilter, SortField } from "./_types";
 
@@ -140,6 +141,9 @@ export function ProductsContent() {
   // Prefetch next page for faster pagination navigation
   usePrefetchNextPage(queryParams, totalPages);
 
+  // Prefetch product detail on hover (with 150ms threshold)
+  const createPrefetchHandlers = usePrefetchProduct();
+
   // Reset to page 1 when client-side filters are applied
   if (hasClientSideFilters && page > 1) {
     setPage(1);
@@ -231,6 +235,7 @@ export function ProductsContent() {
               toggleProductSelection={toggleProductSelection}
               toggleAllProducts={toggleAllProducts}
               confirmDelete={confirmDelete}
+              createPrefetchHandlers={createPrefetchHandlers}
               sortField={sortBy}
               sortOrder={order}
               onSort={handleSortChange}
@@ -256,6 +261,7 @@ export function ProductsContent() {
               selectedProducts={selectedProducts}
               toggleProductSelection={toggleProductSelection}
               confirmDelete={confirmDelete}
+              createPrefetchHandlers={createPrefetchHandlers}
               page={page}
               limit={limit}
               total={total}

@@ -20,6 +20,13 @@ import {
 
 const LG_BREAKPOINT = 1024;
 
+type PrefetchHandlers = {
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onFocus: () => void;
+  onBlur: () => void;
+};
+
 interface ProductsTableProps {
   products: Product[];
   loading: boolean;
@@ -27,6 +34,7 @@ interface ProductsTableProps {
   toggleProductSelection: (id: number) => void;
   toggleAllProducts: () => void;
   confirmDelete: (id: number) => void;
+  createPrefetchHandlers?: (id: number) => PrefetchHandlers;
   sortField: SortField | null;
   sortOrder: SortOrder;
   onSort: (field: SortField) => void;
@@ -45,6 +53,7 @@ export function ProductsTable({
   toggleProductSelection,
   toggleAllProducts,
   confirmDelete,
+  createPrefetchHandlers,
   sortField,
   sortOrder,
   onSort,
@@ -184,6 +193,7 @@ export function ProductsTable({
                   isLargeScreen={isLargeScreen}
                   onToggleSelection={toggleProductSelection}
                   onDelete={confirmDelete}
+                  prefetchHandlers={createPrefetchHandlers?.(product.id)}
                 />
               ))
             )}

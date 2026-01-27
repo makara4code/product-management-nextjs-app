@@ -20,12 +20,20 @@ import type { Product } from "@/lib/api/products";
 
 const limitOptions = [5, 10, 20, 50, 100] as const;
 
+type PrefetchHandlers = {
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onFocus: () => void;
+  onBlur: () => void;
+};
+
 interface VirtualizedCardGridProps {
   products: Product[];
   loading: boolean;
   selectedProducts: number[];
   toggleProductSelection: (id: number) => void;
   confirmDelete: (id: number) => void;
+  createPrefetchHandlers?: (id: number) => PrefetchHandlers;
   page: number;
   limit: number;
   total: number;
@@ -55,11 +63,13 @@ function ProductCard({
   isSelected,
   onToggleSelection,
   onDelete,
+  prefetchHandlers,
 }: {
   product: Product;
   isSelected: boolean;
   onToggleSelection: () => void;
   onDelete: () => void;
+  prefetchHandlers?: PrefetchHandlers;
 }) {
   return (
     <Card className="overflow-hidden group pt-0 flex flex-col">
@@ -101,6 +111,7 @@ function ProductCard({
             <Link
               href={`/products/${product.id}`}
               className="font-medium line-clamp-1 hover:underline text-sm sm:text-base"
+              {...prefetchHandlers}
             >
               {product.title}
             </Link>
@@ -145,6 +156,7 @@ export function VirtualizedCardGrid({
   selectedProducts,
   toggleProductSelection,
   confirmDelete,
+  createPrefetchHandlers,
   page,
   limit,
   total,
@@ -201,6 +213,7 @@ export function VirtualizedCardGrid({
                 isSelected={selectedProducts.includes(product.id)}
                 onToggleSelection={() => toggleProductSelection(product.id)}
                 onDelete={() => confirmDelete(product.id)}
+                prefetchHandlers={createPrefetchHandlers?.(product.id)}
               />
             ))}
           </div>
