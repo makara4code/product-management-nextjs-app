@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OfflineDetector } from "@/components/offline-detector";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 
@@ -58,7 +59,9 @@ async function SidebarStateProvider({ children }: PropsWithChildren) {
       <AppSidebar />
       <SidebarInset className="flex flex-col">
         <AppHeader />
-        <main className="container mx-auto">{children}</main>
+        <main className="container mx-auto flex flex-1">
+          <OfflineDetector>{children}</OfflineDetector>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

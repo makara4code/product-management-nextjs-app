@@ -45,3 +45,11 @@ next-env.d.ts
 .claude/settings.local.json
 # next-agents-md
 .next-docs/
+
+# PWA generated files
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/swe-worker-*.js
+public/fallback-*.js

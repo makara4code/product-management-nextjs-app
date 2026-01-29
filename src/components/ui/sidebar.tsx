@@ -80,32 +80,20 @@ function SidebarProvider({
   // Track if user has manually toggled sidebar (to respect their preference)
   const [userToggled, setUserToggled] = React.useState(false);
 
-  // Cache cookie value to avoid repeated parsing
-  const getCookieValue = React.useCallback(() => {
-    const cookie = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`));
-    return cookie ? cookie.split("=")[1] !== "false" : null;
-  }, []);
-
   // Mark as hydrated after mount
   React.useEffect(() => {
     setIsHydrated(true);
   }, []);
 
-  // Auto-collapse sidebar on tablet/medium screens
+  // Auto-collapse sidebar on tablet/medium screens (only after hydration to prevent flash)
   React.useEffect(() => {
+    // Skip during SSR/initial hydration to prevent flash
+    if (!isHydrated) return;
+
     if (isTablet && !userToggled) {
       _setOpen(false);
-    } else if (!isTablet && !isMobile && !userToggled) {
-      const cookieValue = getCookieValue();
-      if (cookieValue !== null) {
-        _setOpen(cookieValue);
-      } else {
-        _setOpen(defaultOpen);
-      }
     }
-  }, [isTablet, isMobile, userToggled, defaultOpen, getCookieValue]);
+  }, [isTablet, userToggled, isHydrated]);
 
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
