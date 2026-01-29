@@ -306,14 +306,15 @@ Environment variables are validated at startup using Zod schemas. Invalid config
 
 ## Scripts
 
-| Command            | Description                |
-| ------------------ | -------------------------- |
-| `bun run dev`      | Start development server   |
-| `bun run build`    | Create production build    |
-| `bun run start`    | Start production server    |
-| `bun run lint`     | Check for linting issues   |
-| `bun run lint:fix` | Fix linting issues         |
-| `bun run format`   | Format code with Biome     |
+| Command              | Description                |
+| -------------------- | -------------------------- |
+| `bun run dev`        | Start development server   |
+| `bun run build`      | Create production build    |
+| `bun run start`      | Start production server    |
+| `bun run lint`       | Check for linting issues   |
+| `bun run lint:fix`   | Fix linting issues         |
+| `bun run format`     | Format code with Biome     |
+| `bun run typecheck`  | Run TypeScript type check  |
 
 ## Code Quality
 
