@@ -101,8 +101,7 @@ export function ProductsContent() {
     category: serverCategory,
   };
 
-  // TanStack Query - reads directly from URL state
-  const { data, isFetching: loading } = useProductsQuery(queryParams);
+  const { data, isLoading } = useProductsQuery(queryParams);
 
   const { data: apiCategories = [] } = useCategoriesQuery();
   const deleteMutation = useDeleteProductMutation();
@@ -230,7 +229,7 @@ export function ProductsContent() {
           >
             <ProductsTable
               products={filteredProducts}
-              loading={loading}
+              loading={isLoading}
               selectedProducts={selectedProducts}
               toggleProductSelection={toggleProductSelection}
               toggleAllProducts={toggleAllProducts}
@@ -257,7 +256,7 @@ export function ProductsContent() {
           >
             <VirtualizedCardGrid
               products={filteredProducts}
-              loading={loading}
+              loading={isLoading}
               selectedProducts={selectedProducts}
               toggleProductSelection={toggleProductSelection}
               confirmDelete={confirmDelete}

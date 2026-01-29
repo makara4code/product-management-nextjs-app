@@ -1,6 +1,7 @@
 export {
   useProductsQuery,
   useProductQuery,
+  useProductSuspenseQuery,
   useCategoriesQuery,
   useDeleteProductMutation,
   useCreateProductMutation,

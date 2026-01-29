@@ -1,42 +1,22 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { ProductForm } from "@/components/product-form";
 import { useProductQuery } from "../../_hooks";
 import { EditProductSkeleton } from "../../_components";
 
-interface EditProductContentProps {
-  id: string;
-}
+export function EditProductContent() {
+  // Use client-side params hook - no server round-trip needed
+  const params = useParams<{ id: string }>();
+  const id = params.id;
 
-export function EditProductContent({ id }: EditProductContentProps) {
-  const {
-    data: product,
-    isLoading: loading,
-    error: queryError,
-  } = useProductQuery(Number(id));
+  // useQuery checks cache first - renders instantly if data is cached
+  // No Suspense boundary needed, we handle loading state manually
+  const { data: product } = useProductQuery(Number(id));
 
-  const error =
-    queryError instanceof Error
-      ? queryError.message
-      : queryError
-        ? "Failed to fetch product"
-        : null;
-
-  if (loading) {
+  // Show skeleton only when data is not in cache
+  if (!product) {
     return <EditProductSkeleton />;
-  }
-
-  if (error || !product) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-6">
-        <div className="text-center">
-          <h2 className="text-lg font-semibold">Product not found</h2>
-          <p className="text-muted-foreground">
-            {error || "Unable to load product"}
-          </p>
-        </div>
-      </div>
-    );
   }
 
   return <ProductForm mode="edit" product={product} />;

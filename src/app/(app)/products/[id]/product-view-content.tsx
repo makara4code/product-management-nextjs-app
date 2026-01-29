@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import {
   ChevronRight,
   Pencil,
@@ -24,33 +25,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useRouter } from "next/navigation";
-import { ProductViewSkeleton } from "../_components";
 import { formatDate, formatPrice, calculateDiscountedPrice } from "../_lib";
+import { ProductViewSkeleton } from "../_components";
 
-interface ProductViewContentProps {
-  id: string;
-}
+export function ProductViewContent() {
+  // Use client-side params hook - no server round-trip needed
+  const params = useParams<{ id: string }>();
+  const id = params.id;
 
-export function ProductViewContent({ id }: ProductViewContentProps) {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const {
-    data: product,
-    isLoading: loading,
-    error: queryError,
-  } = useProductQuery(Number(id));
+  // useQuery checks cache first - renders instantly if data is cached
+  // No Suspense boundary needed, we handle loading state manually
+  const { data: product } = useProductQuery(Number(id));
 
   const deleteProductMutation = useDeleteProductMutation();
 
-  const error =
-    queryError instanceof Error
-      ? queryError.message
-      : queryError
-        ? "Failed to fetch product"
-        : null;
+  // Show skeleton only when data is not in cache
+  if (!product) {
+    return <ProductViewSkeleton />;
+  }
 
   useEffect(() => {
     if (product?.thumbnail) {
@@ -59,7 +55,6 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
   }, [product?.thumbnail]);
 
   const handleDelete = async () => {
-    if (!product) return;
     try {
       await deleteProductMutation.mutateAsync(product.id);
       router.push("/products");
@@ -67,26 +62,6 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
       setDeleteDialogOpen(false);
     }
   };
-
-  if (loading) {
-    return <ProductViewSkeleton />;
-  }
-
-  if (error || !product) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-6">
-        <div className="text-center">
-          <h2 className="text-lg font-semibold">Product not found</h2>
-          <p className="text-muted-foreground">
-            {error || "Unable to load product"}
-          </p>
-          <Button asChild className="mt-4">
-            <Link href="/products">Back to Products</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   const discountedPrice = calculateDiscountedPrice(
     product.price,
@@ -102,7 +77,7 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
             Product
           </Link>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground truncate max-w-[200px]">
+          <span className="text-muted-foreground truncate max-w-50">
             {product.title}
           </span>
         </div>

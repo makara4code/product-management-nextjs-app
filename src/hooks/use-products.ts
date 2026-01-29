@@ -76,10 +76,12 @@ export function useProducts(options: UseProductsOptions = {}) {
       ? advancedFilters.categories[0]
       : undefined;
 
-  // Use TanStack Query for data fetching with server-side pagination, sorting, and category
+  // Use TanStack Query for data fetching with server-side pagination, sorting, and category.
+  // We use isLoading (not isFetching) so skeleton only shows on initial load when no cached data exists.
+  // Combined with placeholderData: keepPreviousData in the query, old data stays visible during refetches.
   const {
     data,
-    isFetching: loading,
+    isLoading,
     error: queryError,
     refetch,
   } = useProductsQuery({
@@ -212,10 +214,10 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   // Reset to page 1 when client-side filters are applied
   useEffect(() => {
-    if (hasClientSideFilters && page > 1 && !loading) {
+    if (hasClientSideFilters && page > 1 && !isLoading) {
       setPage(1);
     }
-  }, [hasClientSideFilters, page, loading]);
+  }, [hasClientSideFilters, page, isLoading]);
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
@@ -339,7 +341,7 @@ export function useProducts(options: UseProductsOptions = {}) {
     products: paginatedProducts,
     allProducts,
     total,
-    loading,
+    isLoading,
     error,
     page,
     limit,
@@ -372,7 +374,7 @@ export function useProducts(options: UseProductsOptions = {}) {
 export function useCategories() {
   const {
     data: categories = [],
-    isLoading: loading,
+    isLoading,
     error: queryError,
   } = useCategoriesQuery();
   const error =
@@ -382,5 +384,5 @@ export function useCategories() {
         ? "Failed to fetch categories"
         : null;
 
-  return { categories, loading, error };
+  return { categories, isLoading, error };
 }

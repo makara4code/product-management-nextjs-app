@@ -1,19 +1,8 @@
-import { Suspense } from "react";
 import { EditProductContent } from "./edit-product-content";
-import { EditProductSkeleton } from "../../_components";
 
-interface EditProductPageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default async function EditProductPage({
-  params,
-}: EditProductPageProps) {
-  const { id } = await params;
-
-  return (
-    <Suspense fallback={<EditProductSkeleton />}>
-      <EditProductContent id={id} />
-    </Suspense>
-  );
+// Fully client-side page - no async server component
+// This allows client-side navigation to use TanStack Query cache immediately
+// loading.tsx provides Suspense boundary for initial load only
+export default function EditProductPage() {
+  return <EditProductContent />;
 }
