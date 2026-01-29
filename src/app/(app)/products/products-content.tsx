@@ -101,10 +101,7 @@ export function ProductsContent() {
     category: serverCategory,
   };
 
-  // TanStack Query - reads directly from URL state
-  // Use isLoading (not isFetching) so skeleton only shows on initial load.
-  // With placeholderData: keepPreviousData, old data stays visible during refetches.
-  const { data, isLoading: loading } = useProductsQuery(queryParams);
+  const { data, isLoading } = useProductsQuery(queryParams);
 
   const { data: apiCategories = [] } = useCategoriesQuery();
   const deleteMutation = useDeleteProductMutation();
@@ -232,7 +229,7 @@ export function ProductsContent() {
           >
             <ProductsTable
               products={filteredProducts}
-              loading={loading}
+              loading={isLoading}
               selectedProducts={selectedProducts}
               toggleProductSelection={toggleProductSelection}
               toggleAllProducts={toggleAllProducts}
@@ -259,7 +256,7 @@ export function ProductsContent() {
           >
             <VirtualizedCardGrid
               products={filteredProducts}
-              loading={loading}
+              loading={isLoading}
               selectedProducts={selectedProducts}
               toggleProductSelection={toggleProductSelection}
               confirmDelete={confirmDelete}
