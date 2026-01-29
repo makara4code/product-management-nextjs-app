@@ -44,7 +44,7 @@ A modern product management application built with Next.js 16, React 19, and Typ
 ## Prerequisites
 
 - Node.js 22 (see `.nvmrc`)
-- pnpm (required package manager)
+- [Bun](https://bun.sh/) (required package manager)
 
 ## Getting Started
 
@@ -59,14 +59,14 @@ cd product-management-app
 cp .env.example .env.local
 
 # Install dependencies
-pnpm install
+bun install
 ```
 
 ### Development
 
 ```bash
 # Start the development server
-pnpm dev
+bun run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -75,23 +75,23 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ```bash
 # Create a production build
-pnpm build
+bun run build
 
 # Start the production server
-pnpm start
+bun run start
 ```
 
 ### Linting & Formatting
 
 ```bash
 # Run linter
-pnpm lint
+bun run lint
 
 # Fix linting issues
-pnpm lint:fix
+bun run lint:fix
 
 # Format code
-pnpm format
+bun run format
 ```
 
 ## AI Agent Setup (Claude Code / Cursor)
@@ -306,14 +306,15 @@ Environment variables are validated at startup using Zod schemas. Invalid config
 
 ## Scripts
 
-| Command          | Description                  |
-| ---------------- | ---------------------------- |
-| `pnpm dev`       | Start development server     |
-| `pnpm build`     | Create production build      |
-| `pnpm start`     | Start production server      |
-| `pnpm lint`      | Check for linting issues     |
-| `pnpm lint:fix`  | Fix linting issues           |
-| `pnpm format`    | Format code with Biome       |
+| Command              | Description                |
+| -------------------- | -------------------------- |
+| `bun run dev`        | Start development server   |
+| `bun run build`      | Create production build    |
+| `bun run start`      | Start production server    |
+| `bun run lint`       | Check for linting issues   |
+| `bun run lint:fix`   | Fix linting issues         |
+| `bun run format`     | Format code with Biome     |
+| `bun run typecheck`  | Run TypeScript type check  |
 
 ## Code Quality
 

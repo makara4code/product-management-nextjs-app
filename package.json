@@ -9,10 +9,11 @@
     "lint": "biome check",
     "lint:fix": "biome check --write --no-errors-on-unmatched",
     "format": "biome format --write",
+    "typecheck": "tsc --noEmit",
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json}": "pnpm lint:fix --"
+    "*.{js,jsx,ts,tsx,json}": "bun run lint:fix --"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
