@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - "*.md"
+      - "**/*.md"
       - "docs/**"
       - ".gitignore"
       - ".gitattributes"
@@ -13,7 +13,7 @@ on:
   pull_request:
     branches: [main]
     paths-ignore:
-      - "*.md"
+      - "**/*.md"
       - "docs/**"
       - ".gitignore"
       - ".gitattributes"
@@ -69,7 +69,10 @@ jobs:
             ${{ runner.os }}-nextjs-
 
       - name: Lint and type check
-        run: bun run lint & bun run typecheck & wait
+        run: |
+          bun run lint & pid1=$!
+          bun run typecheck & pid2=$!
+          wait $pid1 && wait $pid2
 
       - name: Build application
         run: bun run build
