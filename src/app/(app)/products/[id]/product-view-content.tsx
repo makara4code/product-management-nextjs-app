@@ -43,16 +43,17 @@ export function ProductViewContent() {
 
   const deleteProductMutation = useDeleteProductMutation();
 
-  // Show skeleton only when data is not in cache
-  if (!product) {
-    return <ProductViewSkeleton />;
-  }
-
+  // Set selected image when product loads - must be before early return
   useEffect(() => {
     if (product?.thumbnail) {
       setSelectedImage(product.thumbnail);
     }
   }, [product?.thumbnail]);
+
+  // Show skeleton only when data is not in cache
+  if (!product) {
+    return <ProductViewSkeleton />;
+  }
 
   const handleDelete = async () => {
     try {
