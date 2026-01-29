@@ -28,10 +28,10 @@ function HeaderSkeleton() {
 // Skeleton sidebar for static shell - no hooks, pure static content
 function SidebarSkeleton() {
   return (
-    <div className="flex h-full w-[280px] flex-col bg-sidebar border-r">
+    <div className="flex h-screen w-70 flex-col bg-sidebar border-r">
       <div className="p-6">
         <div className="flex items-center gap-3">
-          <Skeleton className="h-[30px] w-[30px] rounded-full" />
+          <Skeleton className="h-7.5 w-7.5 rounded-full" />
           <Skeleton className="h-5 w-16" />
         </div>
       </div>

@@ -6,14 +6,15 @@ interface ProductViewPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function ProductViewPage({
-  params,
-}: ProductViewPageProps) {
+async function ProductViewLoader({ params }: ProductViewPageProps) {
   const { id } = await params;
+  return <ProductViewContent id={id} />;
+}
 
+export default function ProductViewPage({ params }: ProductViewPageProps) {
   return (
     <Suspense fallback={<ProductViewSkeleton />}>
-      <ProductViewContent id={id} />
+      <ProductViewLoader params={params} />
     </Suspense>
   );
 }

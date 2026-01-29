@@ -6,14 +6,15 @@ interface EditProductPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function EditProductPage({
-  params,
-}: EditProductPageProps) {
+async function EditProductLoader({ params }: EditProductPageProps) {
   const { id } = await params;
+  return <EditProductContent id={id} />;
+}
 
+export default function EditProductPage({ params }: EditProductPageProps) {
   return (
     <Suspense fallback={<EditProductSkeleton />}>
-      <EditProductContent id={id} />
+      <EditProductLoader params={params} />
     </Suspense>
   );
 }
