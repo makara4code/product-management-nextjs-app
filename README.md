@@ -1,5 +1,7 @@
 # Product Management App
 
+[![CI](https://github.com/makara4code/product-management-nextjs-app/actions/workflows/ci.yml/badge.svg)](https://github.com/makara4code/product-management-nextjs-app/actions/workflows/ci.yml)
+
 A modern product management application built with Next.js 16, React 19, and TypeScript using Domain-Driven Design (DDD) architecture.
 
 ## Tech Stack
