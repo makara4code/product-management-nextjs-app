@@ -102,7 +102,9 @@ export function ProductsContent() {
   };
 
   // TanStack Query - reads directly from URL state
-  const { data, isFetching: loading } = useProductsQuery(queryParams);
+  // Use isLoading (not isFetching) so skeleton only shows on initial load.
+  // With placeholderData: keepPreviousData, old data stays visible during refetches.
+  const { data, isLoading: loading } = useProductsQuery(queryParams);
 
   const { data: apiCategories = [] } = useCategoriesQuery();
   const deleteMutation = useDeleteProductMutation();

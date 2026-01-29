@@ -77,9 +77,10 @@ export function useProducts(options: UseProductsOptions = {}) {
       : undefined;
 
   // Use TanStack Query for data fetching with server-side pagination, sorting, and category
+  // Use isLoading (not isFetching) so skeleton only shows on initial load
   const {
     data,
-    isFetching: loading,
+    isLoading: loading,
     error: queryError,
     refetch,
   } = useProductsQuery({
