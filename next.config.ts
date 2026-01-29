@@ -1,9 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
   cacheComponents: true,
+
+  // Skip type checking during build (already done in CI separately)
+  typescript: {
+    ignoreBuildErrors: process.env.CI === "true",
+  },
+
   images: {
     remotePatterns: [
       {
