@@ -3,8 +3,22 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "*.md"
+      - "docs/**"
+      - ".gitignore"
+      - ".gitattributes"
+      - ".vscode/**"
+      - "LICENSE"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "*.md"
+      - "docs/**"
+      - ".gitignore"
+      - ".gitattributes"
+      - ".vscode/**"
+      - "LICENSE"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -54,11 +68,8 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('bun.lock') }}-
             ${{ runner.os }}-nextjs-
 
-      - name: Run linter
-        run: bun run lint
-
-      - name: Type check
-        run: bun run typecheck
+      - name: Lint and type check
+        run: bun run lint & bun run typecheck & wait
 
       - name: Build application
         run: bun run build
