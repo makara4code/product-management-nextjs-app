@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { use, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -28,10 +28,14 @@ import { useRouter } from "next/navigation";
 import { formatDate, formatPrice, calculateDiscountedPrice } from "../_lib";
 
 interface ProductViewContentProps {
-  id: string;
+  params: Promise<{ id: string }>;
 }
 
-export function ProductViewContent({ id }: ProductViewContentProps) {
+export function ProductViewContent({ params }: ProductViewContentProps) {
+  // Use React 19's use() hook to resolve params on the client
+  // This allows the component to use client-side TanStack Query cache
+  const { id } = use(params);
+
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

@@ -6,15 +6,11 @@ interface ProductViewPageProps {
   params: Promise<{ id: string }>;
 }
 
-async function ProductViewLoader({ params }: ProductViewPageProps) {
-  const { id } = await params;
-  return <ProductViewContent id={id} />;
-}
-
 export default function ProductViewPage({ params }: ProductViewPageProps) {
   return (
     <Suspense fallback={<ProductViewSkeleton />}>
-      <ProductViewLoader params={params} />
+      {/* Pass params Promise directly to client component to use client-side cache */}
+      <ProductViewContent params={params} />
     </Suspense>
   );
 }
