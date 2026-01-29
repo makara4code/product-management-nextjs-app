@@ -94,6 +94,52 @@ pnpm lint:fix
 pnpm format
 ```
 
+## AI Agent Setup (Claude Code / Cursor)
+
+This project includes Next.js documentation for AI coding assistants. The `.next-docs/` folder contains official Next.js documentation that AI agents can reference for accurate, up-to-date information.
+
+### Setting Up Next.js Agent Skill
+
+Run the following command to generate or update the Next.js documentation index in your `CLAUDE.md` file:
+
+```bash
+npx @next/codemod@canary agents-md --output CLAUDE.md
+```
+
+This command:
+
+1. Downloads the latest Next.js documentation to `.next-docs/`
+2. Adds a documentation index reference to your `CLAUDE.md` file
+3. Enables AI agents to search and read Next.js docs for accurate coding assistance
+
+### How It Works
+
+The generated `CLAUDE.md` contains a reference like:
+
+```markdown
+[Next.js Docs Index]|root: ./.next-docs|STOP. What you remember about Next.js is WRONG for this project. Always search docs and read before any task.
+```
+
+This instructs AI agents to:
+
+- **Always consult the local docs** before making Next.js-related changes
+- **Use the correct patterns** for the specific Next.js version in use
+- **Avoid outdated knowledge** from training data
+
+### Updating Documentation
+
+Re-run the command periodically to get the latest Next.js documentation:
+
+```bash
+npx @next/codemod@canary agents-md --output CLAUDE.md
+```
+
+### Supported AI Tools
+
+- **Claude Code** (Anthropic's CLI)
+- **Cursor** (AI-powered editor)
+- Any AI tool that reads `CLAUDE.md` or similar instruction files
+
 ## Architecture
 
 ### Project Structure

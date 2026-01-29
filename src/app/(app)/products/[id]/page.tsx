@@ -17,5 +17,3 @@ export default async function ProductViewPage({
     </Suspense>
   );
 }
-
-export const dynamic = "force-dynamic";

@@ -17,5 +17,3 @@ export default async function EditProductPage({
     </Suspense>
   );
 }
-
-export const dynamic = "force-dynamic";

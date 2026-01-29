@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
@@ -25,6 +25,9 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { usePrefetchProducts } from "@/app/(app)/products/_hooks/use-products-query";
+
+// Hover threshold before prefetching (ms) - prevents accidental triggers
+const PREFETCH_HOVER_THRESHOLD = 100;
 
 type NavItem = {
   title: string;
@@ -65,6 +68,7 @@ type NavItemComponentProps = {
   isActive: boolean;
   onNavClick: () => void;
   onPrefetch?: () => void;
+  onRouterPrefetch: () => void;
 };
 
 const NavItemComponent = React.memo(function NavItemComponent({
@@ -72,7 +76,40 @@ const NavItemComponent = React.memo(function NavItemComponent({
   isActive,
   onNavClick,
   onPrefetch,
+  onRouterPrefetch,
 }: NavItemComponentProps) {
+  const prefetchTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  // Combined prefetch handler with threshold to prevent accidental triggers
+  const handlePrefetch = React.useCallback(() => {
+    // Clear any existing timeout
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+    }
+
+    // Set new timeout for prefetch
+    prefetchTimeoutRef.current = setTimeout(() => {
+      // Prefetch Next.js route (RSC payload + JS bundle)
+      onRouterPrefetch();
+      // Prefetch data via React Query if available
+      onPrefetch?.();
+    }, PREFETCH_HOVER_THRESHOLD);
+  }, [onRouterPrefetch, onPrefetch]);
+
+  const handlePrefetchCancel = React.useCallback(() => {
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+      prefetchTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return handlePrefetchCancel;
+  }, [handlePrefetchCancel]);
+
   return (
     <SidebarMenuItem className="relative">
       {isActive && (
@@ -90,9 +127,12 @@ const NavItemComponent = React.memo(function NavItemComponent({
       >
         <Link
           href={item.url}
+          prefetch={false}
           onClick={onNavClick}
-          onMouseEnter={onPrefetch}
-          onFocus={onPrefetch}
+          onMouseEnter={handlePrefetch}
+          onMouseLeave={handlePrefetchCancel}
+          onFocus={handlePrefetch}
+          onBlur={handlePrefetchCancel}
           className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full"
         >
           <item.icon className="h-5 w-5 shrink-0" />
@@ -120,6 +160,7 @@ const usePrefetchMap = () => {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const router = useRouter();
   const { setOpenMobile, isMobile } = useSidebar();
   const prefetchMap = usePrefetchMap();
 
@@ -130,12 +171,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }, [isMobile, setOpenMobile]);
 
+  // Create memoized route prefetch handlers for each nav item
+  const routerPrefetchHandlers = React.useMemo(
+    () =>
+      Object.fromEntries(
+        navItems.map((item) => [item.url, () => router.prefetch(item.url)]),
+      ),
+    [router],
+  );
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="p-6 transition-all duration-200 ease-linear group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-12">
         <Link
           href="/dashboard"
+          prefetch={false}
           onClick={handleNavClick}
+          onMouseEnter={() => router.prefetch("/dashboard")}
           className="flex items-center gap-3 overflow-hidden group-data-[collapsible=icon]:gap-0"
         >
           <Image
@@ -164,6 +216,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 isActive={isActive}
                 onNavClick={handleNavClick}
                 onPrefetch={onPrefetch}
+                onRouterPrefetch={routerPrefetchHandlers[item.url]}
               />
             );
           })}
