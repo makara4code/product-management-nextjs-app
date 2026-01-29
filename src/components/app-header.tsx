@@ -26,6 +26,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const shops = [
   { id: "1", name: "Nik Shop" },
@@ -109,9 +110,12 @@ export function AppHeader({ title }: AppHeaderProps) {
   return (
     <header className="flex h-14 md:h-16 shrink-0 items-center justify-between border-b bg-background">
       <div className="flex justify-between w-full container items-center mx-auto px-4">
-        <h1 className="text-base md:text-xl font-semibold truncate">
-          {pageTitle}
-        </h1>
+        <div className="flex items-center gap-2">
+          <SidebarTrigger className="md:hidden" />
+          <h1 className="text-base md:text-xl font-semibold truncate">
+            {pageTitle}
+          </h1>
+        </div>
 
         <div className="flex items-center gap-2">
           <DropdownMenu>
