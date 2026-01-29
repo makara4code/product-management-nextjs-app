@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import {
   useQuery,
+  useSuspenseQuery,
   useMutation,
   useQueryClient,
   keepPreviousData,
@@ -74,6 +75,15 @@ export function useProductQuery(id: number) {
     queryFn: ({ signal }) => productsService.getProduct(id, signal),
     enabled: id > 0,
     // Keep prefetched data fresh for 30 seconds to avoid refetch on navigation
+    staleTime: 30 * 1000,
+  });
+}
+
+// Suspense-enabled version: suspends when loading, returns immediately when cached
+export function useProductSuspenseQuery(id: number) {
+  return useSuspenseQuery<Product>({
+    queryKey: productKeys.detail(id),
+    queryFn: ({ signal }) => productsService.getProduct(id, signal),
     staleTime: 30 * 1000,
   });
 }

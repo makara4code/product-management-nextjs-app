@@ -12,7 +12,7 @@ import {
   Layers,
   Calendar,
 } from "lucide-react";
-import { useProductQuery, useDeleteProductMutation } from "../_hooks";
+import { useProductSuspenseQuery, useDeleteProductMutation } from "../_hooks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -25,7 +25,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { ProductViewSkeleton } from "../_components";
 import { formatDate, formatPrice, calculateDiscountedPrice } from "../_lib";
 
 interface ProductViewContentProps {
@@ -37,20 +36,10 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const {
-    data: product,
-    isLoading: loading,
-    error: queryError,
-  } = useProductQuery(Number(id));
+  // useSuspenseQuery: suspends when loading, returns immediately when cached
+  const { data: product } = useProductSuspenseQuery(Number(id));
 
   const deleteProductMutation = useDeleteProductMutation();
-
-  const error =
-    queryError instanceof Error
-      ? queryError.message
-      : queryError
-        ? "Failed to fetch product"
-        : null;
 
   useEffect(() => {
     if (product?.thumbnail) {
@@ -59,7 +48,6 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
   }, [product?.thumbnail]);
 
   const handleDelete = async () => {
-    if (!product) return;
     try {
       await deleteProductMutation.mutateAsync(product.id);
       router.push("/products");
@@ -67,26 +55,6 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
       setDeleteDialogOpen(false);
     }
   };
-
-  if (loading) {
-    return <ProductViewSkeleton />;
-  }
-
-  if (error || !product) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-6">
-        <div className="text-center">
-          <h2 className="text-lg font-semibold">Product not found</h2>
-          <p className="text-muted-foreground">
-            {error || "Unable to load product"}
-          </p>
-          <Button asChild className="mt-4">
-            <Link href="/products">Back to Products</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   const discountedPrice = calculateDiscountedPrice(
     product.price,
@@ -102,7 +70,7 @@ export function ProductViewContent({ id }: ProductViewContentProps) {
             Product
           </Link>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground truncate max-w-[200px]">
+          <span className="text-muted-foreground truncate max-w-50">
             {product.title}
           </span>
         </div>
