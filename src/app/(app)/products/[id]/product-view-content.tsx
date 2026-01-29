@@ -1,8 +1,9 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import {
   ChevronRight,
   Pencil,
@@ -12,7 +13,7 @@ import {
   Layers,
   Calendar,
 } from "lucide-react";
-import { useProductSuspenseQuery, useDeleteProductMutation } from "../_hooks";
+import { useProductQuery, useDeleteProductMutation } from "../_hooks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -24,26 +25,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useRouter } from "next/navigation";
 import { formatDate, formatPrice, calculateDiscountedPrice } from "../_lib";
+import { ProductViewSkeleton } from "../_components";
 
-interface ProductViewContentProps {
-  params: Promise<{ id: string }>;
-}
-
-export function ProductViewContent({ params }: ProductViewContentProps) {
-  // Use React 19's use() hook to resolve params on the client
-  // This allows the component to use client-side TanStack Query cache
-  const { id } = use(params);
+export function ProductViewContent() {
+  // Use client-side params hook - no server round-trip needed
+  const params = useParams<{ id: string }>();
+  const id = params.id;
 
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  // useSuspenseQuery: suspends when loading, returns immediately when cached
-  const { data: product } = useProductSuspenseQuery(Number(id));
+  // useQuery checks cache first - renders instantly if data is cached
+  // No Suspense boundary needed, we handle loading state manually
+  const { data: product } = useProductQuery(Number(id));
 
   const deleteProductMutation = useDeleteProductMutation();
+
+  // Show skeleton only when data is not in cache
+  if (!product) {
+    return <ProductViewSkeleton />;
+  }
 
   useEffect(() => {
     if (product?.thumbnail) {
